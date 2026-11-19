@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O Oráculo das Expressões — Jogo de Idiomas</title>
+<meta name="description" content="Um jogo místico: adivinhe o significado das expressões em inglês.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07040f;
+    --violet:#a06cd5;
+    --gold:#f0d78a;
+    --ink:#e9e2f5;
+    --ink-dim:#a99ec0;
+    --good:#63d6a5;
+    --bad:#e2687a;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{ height:100%; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    font-family:'Cormorant Garamond', Georgia, serif;
+    background:
+      radial-gradient(900px 600px at 50% -10%, #241040 0%, transparent 62%),
+      radial-gradient(700px 520px at 82% 112%, #1a0d2e 0%, transparent 60%),
+      var(--bg);
+    display:flex;
+    justify-content:center;
+    overflow-x:hidden;
+  }
+
+  /* ---------- estrelas ---------- */
+  .stars{
+    position:fixed; inset:0; z-index:0;
+    pointer-events:none; overflow:hidden;
+  }
+  .star{
+    position:absolute;
+    border-radius:50%;
+    background:#fff;
+    opacity:.5;
+    animation:twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{ opacity:.12; transform:scale(.75); }
+    50%    { opacity:.95; transform:scale(1.35); }
+  }
+
+  /* ---------- layout ---------- */
+  .stage{
+    position:relative; z-index:1;
+    width:min(760px,100%);
+    padding:22px 18px 64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:20px;
+  }
+
+  .topbar{
+    width:100%;
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; flex-wrap:wrap;
+  }
+  .title{
+    font-family:'Cinzel',serif;
+    font-size:clamp(13px,3.2vw,17px);
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--gold);
+    text-shadow:0 0 18px rgba(240,215,138,.45);
+  }
+  .hud{
+    display:flex; gap:14px; align-items:center;
+    font-size:14px; letter-spacing:.12em;
+    color:var(--ink-dim);
+  }
+  .hud b{ color:var(--gold); font-weight:600; }
+
+  /* ---------- oráculo ---------- */
+  .oracle{
+    width:100%;
+    display:flex; flex-direction:column; align-items:center;
+  }
+
+  .bubble{
+    position:relative;
+    width:min(560px,100%);
+    min-height:76px;
+    display:flex; align-items:center; justify-content:center;
+    padding:16px 22px;
+    border-radius:16px;
+    background:linear-gradient(160deg, rgba(60,35,100,.88), rgba(22,12,40,.94));
+    border:1px solid rgba(160,108,213,.45);
+    box-shadow:0 0 32px rgba(160,108,213,.25), inset 0 0 30px rgba(160,108,213,.12);
+    font-size:clamp(16px,4vw,19px);
+    line-height:1.45;
+    font-style:italic;
+    text-align:center;
+    color:#efe8ff;
+  }
+  .bubble::after{
+    content:'';
+    position:absolute; left:50%; bottom:-9px;
+    width:16px; height:16px;
+    transform:translateX(-50%) rotate(45deg);
+    background:linear-gradient(160deg, rgba(60,35,100,.9), rgba(22,12,40,.95));
+    border-right:1px solid rgba(160,108,213,.45);
+    border-bottom:1px solid rgba(160,108,213,.45);
+  }
+
+  .vase-wrap{
+    position:relative;
+    width:150px; height:200px;
+    margin-top:14px;
+    display:grid; place-items:center;
+    animation:float 6s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{ transform:translateY(0); }
+    50%    { transform:translateY(-8px); }
+  }
+  .vase-wrap::before{
+    content:'';
+    position:absolute;
+    width:190px; height:190px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(160,108,213,.55), transparent 66%);
+    filter:blur(16px);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:.45; transform:scale(.9); }
+    50%    { opacity:1;   transform:scale(1.12); }
+  }
+
+  .vase{
+    position:relative;
+    width:100%; height:100%;
+    overflow:visible;
+    filter:drop-shadow(0 0 22px rgba(160,108,213,.6));
+  }
+  .inner-glow{
+    transform-origin:50px 66px;
+    animation:innerPulse 4s ease-in-out infinite;
+  }
+  @keyframes innerPulse{
+    0%,100%{ opacity:.5; transform:scale(.94); }
+    50%    { opacity:1;  transform:scale(1.07); }
+  }
+
+  .ember{
+    position:absolute; bottom:70px; left:50%;
+    width:5px; height:5px; border-radius:50%;
+    background:var(--gold);
+    box-shadow:0 0 12px var(--gold);
+    opacity:0;
+    animation:rise 5.5s linear infinite;
+  }
+  .ember:nth-child(3){ animation-delay:1.8s; left:42%; }
+  .ember:nth-child(4){ animation-delay:3.6s; left:58%; }
+  @keyframes rise{
+    0%  { opacity:0; transform:translateY(0) scale(.6); }
+    15% { opacity:.95; }
+    100%{ opacity:0; transform:translateY(-95px) scale(1.1); }
+  }
+
+  /* ---------- painel ---------- */
+  .panel{
+    width:min(620px,100%);
+    display:flex; flex-direction:column;
+    align-items:center; gap:16px;
+    text-align:center;
+  }
+
+  .progress{
+    width:100%; height:3px; border-radius:3px;
+    background:rgba(255,255,255,.08);
+    overflow:hidden;
+  }
+  .progress span{
+    display:block; height:100%; width:0;
+    background:linear-gradient(90deg, var(--violet), var(--gold));
+    box-shadow:0 0 12px var(--gold);
+    transition:width .5s ease;
+  }
+
+  .round-label{
+    font-size:11px;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+
+  .expression{
+    width:100%;
+    padding:20px 24px;
+    border-radius:14px;
+    border:1px solid rgba(240,215,138,.35);
+    background:linear-gradient(180deg, rgba(240,215,138,.09), rgba(0,0,0,0));
+    box-shadow:inset 0 0 40px rgba(240,215,138,.1), 0 0 26px rgba(0,0,0,.5);
+    font-family:'Cinzel',serif;
+    font-size:clamp(21px,5.6vw,32px);
+    letter-spacing:.03em;
+    line-height:1.25;
+    color:#fff;
+    text-shadow:0 0 26px rgba(240,215,138,.55);
+  }
+
+  @keyframes shake{
+    10%,90%{ transform:translateX(-3px); }
+    20%,80%{ transform:translateX(5px); }
+    30%,50%,70%{ transform:translateX(-7px); }
+    40%,60%{ transform:translateX(7px); }
+  }
+  .shake{ animation:shake .5s; }
+
+  .options{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  @media(min-width:620px){
+    .options{ grid-template-columns:1fr 1fr; }
+  }
+
+  .option{
+    position:relative;
+    font-family:inherit;
+    font-size:clamp(15px,3.6vw,17px);
+    line-height:1.35;
+    text-align:left;
+    color:var(--ink);
+    padding:15px 18px;
+    border-radius:12px;
+    border:1px solid rgba(160,108,213,.35);
+    background:linear-gradient(160deg, rgba(45,26,74,.8), rgba(16,9,30,.92));
+    cursor:pointer;
+    transition:transform .22s, border-color .22s, box-shadow .22s, color .22s, background .22s;
+  }
+  .option:hover:not(:disabled){
+    transform:translateY(-2px);
+    border-color:var(--gold);
+    box-shadow:0 0 24px rgba(240,215,138,.3);
+    color:#fff;
+  }
+  .option:disabled{ cursor:default; }
+  .option.correct{
+    border-color:var(--good);
+    color:#d9fff0;
+    background:linear-gradient(160deg, rgba(28,92,70,.9), rgba(10,30,24,.95));
+    box-shadow:0 0 26px rgba(99,214,165,.45);
+  }
+  .option.correct::after{ content:' ✦'; color:var(--good); }
+  .option.wrong{
+    border-color:var(--bad);
+    color:#ffd9df;
+    background:linear-gradient(160deg, rgba(96,30,44,.9), rgba(34,10,17,.95));
+    box-shadow:0 0 26px rgba(226,104,122,.4);
+  }
+  .option.wrong::after{ content:' ✧'; color:var(--bad); }
+
+  .btn{
+    font-family:'Cinzel',serif;
+    font-size:13px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    padding:16px 32px;
+    border-radius:999px;
+    border:1px solid var(--gold);
+    color:#1a0d2e;
+    background:linear-gradient(160deg,#f9ecb8,#d8b859);
+    box-shadow:0 0 30px rgba(240,215,138,.35);
+    cursor:pointer;
+    transition:transform .22s, box-shadow .22s;
+  }
+  .btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 0 46px rgba(240,215,138,.6);
+  }
+  .btn:active{ transform:translateY(0); }
+
+  .intro{
+    margin:0;
+    max-width:46ch;
+    font-size:18px;
+    line-height:1.6;
+    color:var(--ink-dim);
+  }
+
+  /* ---------- fim ---------- */
+  .end-card{
+    width:100%;
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+    padding:28px 22px;
+    border-radius:18px;
+    border:1px solid rgba(240,215,138,.3);
+    background:linear-gradient(160deg, rgba(45,26,74,.72), rgba(13,7,24,.92));
+    box-shadow:0 0 60px rgba(160,108,213,.28);
+  }
+  .end-score{
+    font-family:'Cinzel',serif;
+    font-size:54px;
+    line-height:1;
+    color:var(--gold);
+    text-shadow:0 0 32px rgba(240,215,138,.65);
+  }
+  .end-score span{
+    font-size:19px;
+    color:var(--ink-dim);
+    text-shadow:none;
+  }
+  .end-title{
+    margin:0;
+    font-family:'Cinzel',serif;
+    font-size:18px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:#fff;
+  }
+  .end-text{
+    margin:0;
+    max-width:44ch;
+    font-size:17px;
+    line-height:1.55;
+    color:var(--ink-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<main class="stage">
+
+  <header class="topbar">
+    <div class="title">O Oráculo das Expressões</div>
+    <div class="hud">
+      <span>✦ <b id="score">0</b></span>
+      <span id="roundLabel">—</span>
+    </div>
+  </header>
+
+  <section class="oracle">
+    <div class="bubble"><span id="bubbleText"></span></div>
+
+    <div class="vase-wrap">
+      <span class="ember"></span>
+      <span class="ember"></span>
+
+      <svg class="vase" viewBox="0 0 100 150" aria-hidden="true">
+        <defs>
+          <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#5b3a8f"/>
+            <stop offset="45%"  stop-color="#2b1a49"/>
+            <stop offset="100%" stop-color="#120a22"/>
+          </linearGradient>
+          <linearGradient id="rimGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#8a6b1f"/>
+            <stop offset="50%"  stop-color="#f5e3a0"/>
+            <stop offset="100%" stop-color="#8a6b1f"/>
+          </linearGradient>
+          <radialGradient id="innerGlow" cx="50%" cy="40%" r="55%">
+            <stop offset="0%"   stop-color="#fff3c4" stop-opacity=".95"/>
+            <stop offset="45%"  stop-color="#c9a0f5" stop-opacity=".45"/>
+            <stop offset="100%" stop-color="#a06cd5" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- corpo -->
+        <path d="M38 22 C38 36 16 46 16 76 C16 110 30 132 50 132 C70 132 84 110 84 76 C84 46 62 36 62 22 Z"
+              fill="url(#bodyGrad)" stroke="url(#rimGrad)" stroke-width="1.4"/>
+
+        <!-- brilho interno -->
+        <ellipse class="inner-glow" cx="50" cy="66" rx="24" ry="32" fill="url(#innerGlow)" opacity=".85"/>
+
+        <!-- linhas decorativas -->
+        <path d="M27 64 Q50 78 73 64" fill="none" stroke="#f5e3a0" stroke-opacity=".35" stroke-width="1.2"/>
+        <path d="M24 84 Q50 98 76 84" fill="none" stroke="#f5e3a0" stroke-opacity=".22" stroke-width="1.2"/>
+
+        <!-- boca -->
+        <ellipse cx="50" cy="21" rx="12" ry="4.5" fill="#0a0512" stroke="url(#rimGrad)" stroke-width="1.4"/>
+        <ellipse cx="50" cy="21" rx="7" ry="2.4" fill="#f5e3a0" opacity=".55"/>
+
+        <!-- base -->
+        <ellipse cx="50" cy="132" rx="15" ry="4" fill="#0a0512" stroke="url(#rimGrad)" stroke-width="1.2"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="panel" id="panel"></section>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =========================================================
+     BANCO DE EXPRESSÕES
+     ========================================================= */
+  const EXPRESSIONS = [
+    { en: "Break the ice",                      pt: "Quebrar o gelo (iniciar uma conversa)" },
+    { en: "Hit the nail on the head",           pt: "Acertar na mosca" },
+    { en: "Piece of cake",                      pt: "Moleza, algo muito fácil" },
+    { en: "Under the weather",                  pt: "Indisposto, sentindo-se mal" },
+    { en: "Once in a blue moon",                pt: "Muito raramente" },
+    { en: "Cost an arm and a leg",              pt: "Custar os olhos da cara" },
+    { en: "Let the cat out of the bag",         pt: "Revelar um segredo" },
+    { en: "Bite the bullet",                    pt: "Enfrentar algo difícil com coragem" },
+    { en: "Hit the sack",                       pt: "Ir dormir" },
+    { en: "Call it a day",                      pt: "Parar por hoje, encerrar o trabalho" },
+    { en: "Speak of the devil",                 pt: "Falando no diabo (ele aparece)" },
+    { en: "Better late than never",             pt: "Antes tarde do que nunca" },
+    { en: "The ball is in your court",          pt: "A decisão agora é sua" },
+    { en: "See eye to eye",                     pt: "Concordar plenamente" },
+    { en: "Break a leg",                        pt: "Boa sorte!" },
+    { en: "Pull someone's leg",                 pt: "Brincar com alguém, enganar de mentirinha" },
+    { en: "On the fence",                       pt: "Indeciso, em cima do muro" },
+    { en: "Kill two birds with one stone",      pt: "Matar dois coelhos com uma cajadada só" },
+    { en: "When pigs fly",                      pt: "Nunca (quando os porcos voarem)" },
+    { en: "Get cold feet",                      pt: "Amarelar, perder a coragem" },
+    { en: "Cut corners",                        pt: "Fazer de qualquer jeito para economizar esforço" },
+    { en: "In hot water",                       pt: "Em apuros, em maus lençóis" },
+    { en: "Blow off steam",                     pt: "Extravar a tensão, descarregar o estresse" },
+    { en: "Keep an eye on",                     pt: "Ficar de olho em" },
+    { en: "Burn the midnight oil",              pt: "Virar a noite trabalhando" },
+    { en: "Ring a bell",                        pt: "Soar familiar" },
+    { en: "A blessing in disguise",             pt: "Um mal que veio para o bem" },
+    { en: "Beat around the bush",               pt: "Ficar rodeando, não ir direto ao ponto" },
+    { en: "Actions speak louder than words",    pt: "Ações valem mais que palavras" },
+    { en: "Bite off more than you can chew",    pt: "Dar um passo maior que a perna" },
+    { en: "The elephant in the room",           pt: "O assunto óbvio que todos evitam" },
+    { en: "Add fuel to the fire",               pt: "Jogar lenha na fogueira" },
+    { en: "Miss the boat",                      pt: "Perder o bonde, perder a oportunidade" },
+    { en: "Let sleeping dogs lie",              pt: "Deixar quieto, não mexer no que está em paz" },
+    { en: "Curiosity killed the cat",           pt: "A curiosidade matou o gato" }
+  ];
+
+  const TOTAL = 10;
+
+  const PROMPTS = [
+    "Diga-me, mortal... o que significa esta expressão?",
+    "As brasas sussurram palavras antigas. Traduza-as para mim.",
+    "O vaso vê... mas precisa da sua voz. O que isto quer dizer?",
+    "Sussurre em sua língua o sentido deste enigma.",
+    "Mais uma sombra do inglês surge diante de nós. Decifre-a.",
+    "Os astros se inclinam para ouvir você. Qual é o significado?"
+  ];
+
+  const PRAISE = [
+    "Ah... sim. A névoa se dissipa diante de você.",
+    "Correto. O vaso reconhece a sabedoria em sua voz.",
+    "As estrelas concordam. Você enxerga além do véu.",
+    "Exato. Uma centelha dourada se acende em você.",
+    "Perfeito. Os antigos sorriem do outro lado.",
+    "Sim... seu idioma interior desperta."
+  ];
+
+  const PITY = [
+    "Não... as brumas o enganaram desta vez.",
+    "O vaso suspira. Não era essa a verdade.",
+    "Quase, mortal. Mas os astros dizem outra coisa.",
+    "Engano. Deixe que eu lhe mostre o caminho."
+  ];
+
+  /* =========================================================
+     ESTADO
+     ========================================================= */
+  const $ = function (id) { return document.getElementById(id); };
+
+  const panel       = $('panel');
+  const bubbleText  = $('bubbleText');
+  const scoreEl     = $('score');
+  const roundEl     = $('roundLabel');
+
+  let deck = [];
+  let idx = 0;
+  let score = 0;
+  let locked = false;
+  let typeTimer = null;
+  let advanceTimer = null;
+
+  /* =========================================================
+     HELPERS
+     ========================================================= */
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function say(text, speed) {
+    clearInterval(typeTimer);
+    bubbleText.textContent = '';
+    let i = 0;
+    typeTimer = setInterval(function () {
+      bubbleText.textContent = text.slice(0, ++i);
+      if (i >= text.length) clearInterval(typeTimer);
+    }, speed || 18);
+  }
+
+  /* =========================================================
+     ESTRELAS DE FUNDO
+     ========================================================= */
+  (function makeStars() {
+    const wrap = $('stars');
+    const total = window.innerWidth < 600 ? 45 : 90;
+    for (let i = 0; i < total; i++) {
+      const s = document.createElement('span');
+      s.className = 'star';
+      const size = (Math.random() * 2 + 1).toFixed(1);
+      s.style.width  = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = (Math.random() * 100).toFixed(2) + '%';
+      s.style.top  = (Math.random() * 100).toFixed(2) + '%';
+      s.style.animationDelay    = (Math.random() * 5).toFixed(2) + 's';
+      s.style.animationDuration = (3 + Math.random() * 4).toFixed(2) + 's';
+      wrap.appendChild(s);
+    }
+  })();
+
+  /* =========================================================
+     TELA INICIAL
+     ========================================================= */
+  function renderStart() {
+    roundEl.textContent = '—';
+    scoreEl.textContent = '0';
+
+    panel.innerHTML =
+      '<p class="intro">Dez expressões inglesas surgirão das brasas.<br>' +
+      'Escolha o verdadeiro significado em português.</p>' +
+      '<button class="btn" id="startBtn" type="button">Consultar o Oráculo</button>';
+
+    $('startBtn').addEventListener('click', startGame);
+
+    say('Aproxime-se, mortal. O vaso tem sede de suas respostas...');
+  }
+
+  /* =========================================================
+     JOGO
+     ========================================================= */
+  function startGame() {
+    clearTimeout(advanceTimer);
+    deck = shuffle(EXPRESSIONS.slice()).slice(0, TOTAL);
+    idx = 0;
+    score = 0;
+    locked = false;
+    scoreEl.textContent = '0';
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    locked = false;
+    const q = deck[idx];
+
+    const wrongs = shuffle(
+      EXPRESSIONS.filter(function (e) { return e.pt !== q.pt; })
+    ).slice(0, 3).map(function (e) { return e.pt; });
+
+    const options = shuffle([q.pt].concat(wrongs));
+
+    roundEl.textContent = 'Enigma ' + (idx + 1) + ' / ' + TOTAL;
+
+    let html = '';
+    html += '<div class="progress"><span style="width:' + (idx / TOTAL) * 100 + '%"></span></div>';
+    html += '<div class="round-label">Enigma ' + (idx + 1) + ' de ' + TOTAL + '</div>';
+    html += '<div class="expression">' + q.en + '</div>';
+    html += '<div class="options">';
+    options.forEach(function (o) {
+      html += '<button class="option" type="button">' + o + '</button>';
+    });
+    html += '</div>';
+
+    panel.innerHTML = html;
+
+    panel.querySelector('.options').addEventListener('click', function (ev) {
+      const btn = ev.target.closest('.option');
+      if (!btn || locked) return;
+      answer(btn, q);
+    });
+
+    say(pick(PROMPTS));
+  }
+
+  function answer(btn, q) {
+    locked = true;
+    const isRight = btn.textContent === q.pt;
+
+    const all = panel.querySelectorAll('.option');
+    for (let i = 0; i < all.length; i++) {
+      const b = all[i];
+      b.disabled = true;
+      if (b.textContent === q.pt) {
+        b.classList.add('correct');
+      } else if (b === btn) {
+        b.classList.add('wrong');
+      }
+    }
+
+    if (isRight) {
+      score++;
+      scoreEl.textContent = score;
+      say(pick(PRAISE));
+    } else {
+      say(pick(PITY) + ' "' + q.en + '" quer dizer: ' + q.pt + '.');
+      const ex = panel.querySelector('.expression');
+      if (ex) ex.classList.add('shake');
+    }
+
+    advanceTimer = setTimeout(next, isRight ? 1900 : 3100);
+  }
+
+  function next() {
+    idx++;
+    if (idx >= TOTAL) {
+      renderEnd();
+      return;
+    }
+    renderQuestion();
+  }
+
+  /* =========================================================
+     FIM DE JOGO
+     ========================================================= */
+  function getRank(s) {
+    if (s === TOTAL) {
+      return {
+        title: 'O Véu Rasgado',
+        text: 'Você não consulta o oráculo — você é o oráculo. Nenhuma expressão escapa à sua visão.',
+        voice: 'Inacreditável... o véu se rasgou por inteiro. Já não há mistérios entre nós.'
+      };
+    }
+    if (s >= 8) {
+      return {
+        title: 'A Chama Firme',
+        text: 'Os astros sorriem. Sua sabedoria arde firme, clara e luminosa.',
+        voice: 'Os astros sorriem para você. Sua chama arde firme e clara.'
+      };
+    }
+    if (s >= 6) {
+      return {
+        title: 'O Caminho Aberto',
+        text: 'O caminho se abre diante de você. Ainda há névoa, mas seus olhos já enxergam.',
+        voice: 'O caminho se abre. Ainda há névoa... mas você já enxerga.'
+      };
+    }
+    if (s >= 4) {
+      return {
+        title: 'Brumas Densas',
+        text: 'As brumas ainda cobrem seus olhos. Volte, mortal, e pergunte outra vez.',
+        voice: 'As brumas ainda cobrem seus olhos. Volte e pergunte outra vez.'
+      };
+    }
+    return {
+      title: 'O Iniciante Cego',
+      text: 'O vaso lamenta... mas todo vidente foi cego antes de ver. Retorne.',
+      voice: 'O vaso lamenta... mas todo vidente foi cego antes de ver. Retorne.'
+    };
+  }
+
+  function renderEnd() {
+    roundEl.textContent = 'Fim da consulta';
+    const rank = getRank(score);
+
+    panel.innerHTML =
+      '<div class="end-card">' +
+        '<div class="end-score">' + score + ' <span>/ ' + TOTAL + '</span></div>' +
+        '<h2 class="end-title">' + rank.title + '</h2>' +
+        '<p class="end-text">' + rank.text + '</p>' +
+        '<button class="btn" id="againBtn" type="button">Consultar novamente</button>' +
+      '</div>';
+
+    $('againBtn').addEventListener('click', startGame);
+    say(rank.voice, 24);
+  }
+
+  /* =========================================================
+     INÍCIO
+     ========================================================= */
+  renderStart();
+})();
+</script>
+</body>
+</html>
